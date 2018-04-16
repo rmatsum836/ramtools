@@ -2,20 +2,23 @@ import numpy as np
 import os
 import sys
 import mdtraj as md
+from mtools.gromacs.gromacs import make_comtrj
 
 
 def find_atoms(gro_file, trj_file, top_file):
     trj = md.load(trj_file, top=gro_file)
+    com_trj = make_comtrj(trj)
     mins = [12.75,0,0]
     maxs = [15.46,0,0]
-    indices = []
-    for frame in trj.xyz:
-        for atom_pos,atom in zip(frame,trj.topology.atoms):
-            if mins[0] <= atom_pos[0] <= maxs[0]:
-                indices.append(atom.index)
-    #indices.append([atom_pos for atom_pos in frame if mins[0] <= atom_pos[0] <= maxs[0]])
-    indices = np.array(indices)
-    import pdb; pdb.set_trace()
+    new_frame = list()
+    for frame in com_trj.xyz:
+        indices = [[atom.index for atom in compound.atoms] for compound in
+        list(com_trj.topology.residues)]
+        new_coord = np.array([coord for coord in frame 
+            if mins[0] <= coord[0] <= maxs[0]])
+        new_frame.append(new_coord)
+    new_frame = np.array(new_frame)
+    return(new_frame)
 
 def calc_number_density(gro_file, trj_file, top_file, bin_width, area,
         dim, box_range):
