@@ -3,25 +3,11 @@ import os
 import sys
 import mdtraj as md
 from mtools.gromacs.gromacs import make_comtrj
-
-
-def find_atoms(gro_file, trj_file, top_file):
-    trj = md.load(trj_file, top=gro_file)
-    com_trj = make_comtrj(trj)
-    mins = [12.75,0,0]
-    maxs = [15.46,0,0]
-    new_frame = list()
-    for frame in com_trj.xyz:
-        indices = [[atom.index for atom in compound.atoms] for compound in
-        list(com_trj.topology.residues)]
-        new_coord = np.array([coord for coord in frame 
-            if mins[0] <= coord[0] <= maxs[0]])
-        new_frame.append(new_coord)
-    new_frame = np.array(new_frame)
-    return(new_frame)
+import matplotlib as mpl
+import matplotlib.pyplot as plt
 
 def calc_number_density(gro_file, trj_file, top_file, bin_width, area,
-        dim, box_range):
+        dim, box_range, maxs, mins):
     """
     Calculate a 1-dimensional number density profile for each residue
 
@@ -37,46 +23,46 @@ def calc_number_density(gro_file, trj_file, top_file, bin_width, area,
         Width (nm) of numpy histogram bins
     dim: int
         Dimension to calculate number density profile (0,1 or 2)
+    box_range: array
+        Range of coordinates in 'dim' to evaluate
+    maxs: array (optional)
+        Maximum coordinate to evaluate 
+    mins: array (optional)
+        Minimum coordinate to evalute
     
     Attributes
     ----------
     """
     trj = md.load(trj_file, top=gro_file)
+    com_trj = make_comtrj(trj)
     resnames = np.unique([x.name for x in
-               trj.topology.residues])
-    mins = [12.75,0,0]
-    maxs = [15.46,0,0]
+               com_trj.topology.residues])
+    bin_list = list()
+    rho_list = list()
     for resname in resnames:
+        sliced = com_trj.topology.select('resname {}'.format(resname))
+        trj_slice = com_trj.atom_slice(sliced)
+        for frame in trj_slice:
+            indices = np.intersect1d(
+                      np.intersect1d(np.where(frame.xyz[-1, :, 0] > mins[0]),
+                      np.where(frame.xyz[-1, :, 0] < maxs[0])),
+                      np.intersect1d(np.where(frame.xyz[-1, :, 1] > box_range[0]),
+                      np.where(frame.xyz[-1, :, 1] < box_range[1])))
 
-        test = trj.topology.select('resname {}'.format(resname))
-        """for frame in trj.xyz:
-            for atom_pos in frame:
-                if mins[0] <= atom_pos[0] <= maxs[0]: #what we want
-                    import pdb; pdb.set_trace()"""
-                    
-        indices = [[atom.index for atom in compound.atoms] for compound in list(trj.atom_slice(test).topology.residues)]
-        """indices = [[atom.index for atom in compound.atoms] if [mins[0]<=
-            atom_pos[0] <= maxs[0]]] n"""
-        import pdb; pdb.set_trace()
-        com = np.array([md.compute_center_of_mass(trj.atom_slice(index)) for
-            index in indices])
-        x = np.histogram(com[:, 1:, dim].reshape((-1,1)),
-            bins=np.linspace(box_range[0], box_range[1],
-            num=1+round((box_range[1]-box_range[0])/bin_width)))
+            num_bins = np.linspace(box_range[0], box_range[1],
+                      num=round((box_range[1]-box_range[0])/bin_width))
 
-        np.savetxt('{}-number-density.txt'.format(resname),
-                  np.vstack([x[1][:-1]+np.mean(x[1][:2])-box_range[0],
-                  x[0]/(area*bin_width*(len(trj)-1))]).transpose())
+            if frame.time == 0:
+                x = np.histogram(frame.xyz[0,indices,1].flatten(), 
+                      bins=num_bins)
+                rho = x[0]
+                bins = x[1]
+            else:
+                rho += np.histogram(frame.xyz[0, indices, 1].flatten(), 
+                      bins=num_bins)
 
-        with open('resnames.txt', "a") as myfile:
-            myfile.write(resname + '\n')
-
-
-gro_file = 'sample.gro'
-trj_file = 'sample.trr'
-top_file = 'init.top'
-box_range = [.92, 2.119] #2.119
-dim = 1
-bin_width = 0.01
-area = 2.973 * 2.702
-find_atoms(gro_file, trj_file, top_file)
+        rho = np.divide(rho, (trj_slice.n_residues) * num_bins)
+        rho_list.append(rho)
+        bin_list.append(bins[:-1])
+        
+    return(rho_list, bin_list)
