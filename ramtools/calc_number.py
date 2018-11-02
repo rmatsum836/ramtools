@@ -5,6 +5,7 @@ import mdtraj as md
 from mtools.gromacs.gromacs import make_comtrj
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+from copy import deepcopy
 
 
 def calc_number_density(trj, area, dim, box_range, n_bins,
@@ -100,3 +101,31 @@ def calc_number_density(trj, area, dim, box_range, n_bins,
     bin_list = bins[:-1]
     
     return(rho_list, bin_list)
+
+
+def calc_area(trj):
+    """
+    Parameters
+    ----------
+    trj: mdtraj trajectory
+    
+    """
+    clone = deepcopy(trj)
+    clone.unitcell_lengths *= 10
+    clone.xyz[:,:,0] *= clone.unitcell_lengths[0][0]
+    clone.xyz[:,:,1] *= clone.unitcell_lengths[0][1]
+    clone.xyz[:,:,2] *= clone.unitcell_lengths[0][2]
+    clone.xyz *= 10
+
+    resnames = np.unique([x.name for x in
+           clone.topology.residues])
+    resnames = np.delete(resnames, np.where(resnames=='RES'))
+    sliced = clone.topology.select('resname {} or resname {}'.format(
+       resnames[0], resnames[1]))
+    trj_slice = clone.atom_slice(sliced)
+    maxs = np.array([np.max(clone.xyz[:,:,x]) for x in range(3)])
+    mins = np.array([np.min(clone.xyz[:,:,x]) for x in range(3)])
+    intercal_region = maxs - mins
+    area = np.prod(intercal_region) / 1000
+
+    return area
