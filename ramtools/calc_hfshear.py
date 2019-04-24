@@ -50,7 +50,7 @@ def _get_pressures(energy_file):
     return xy, xz, zy
 
 
-def calc_hfshear(energy_file, traj, temperature):
+def calc_hfshear(energy_file, trj, temperature):
     xy, xz, zy = _get_pressures(energy_file)
     pressures = [np.mean([i,j,k]) for i,j,k in zip(xy,xz,zy)]
     volume = float(np.mean(trj.unitcell_volumes))
