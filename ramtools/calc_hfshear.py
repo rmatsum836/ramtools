@@ -55,7 +55,7 @@ def calc_hfshear(energy_file, trj, temperature):
     pressures = [np.mean([i,j,k]) for i,j,k in zip(xy,xz,zy)]
     volume = float(np.mean(trj.unitcell_volumes))
     volume *= 1e-27 * u.m**3
-    temperature *= tempreature * u.Kelvin
+    temperature *= temperature * u.Kelvin
 
     shear_bar, shear_std = _calc_mult(temperature, volume, pressures)
     shear_bar *= 1e-9
