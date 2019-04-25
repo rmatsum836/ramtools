@@ -57,8 +57,11 @@ def calc_hfshear(energy_file, trj, temperature):
     volume *= 1e-27 * u.m**3
     temperature *= u.Kelvin
 
+    GPa = 1e9*u.Pa
+    u.define_unit("GPa", GPa)
+
     shear_bar, shear_std = _calc_mult(temperature, volume, pressures)
-    shear_bar *= 1e-9
-    shear_std *= 1e-9
+    shear_bar = shear_bar.in_units(u.GPa)
+    shear_std = shear_std.in_units(u.GPa)
 
     return shear_bar, shear_std
