@@ -19,12 +19,14 @@ def calc_number_density(gro_file, trj_file, top_file, area,
         Trajectory to load
     top_file: str
         GROMACS '.top' file to load
-    bin_width: int
-        Width (nm) of numpy histogram bins
+    area: float
+        Area of box in two dimensions that aren't specified by 'dim'
     dim: int
         Dimension to calculate number density profile (0,1 or 2)
     box_range: array
-        Range of coordinates in 'dim' to evaluate
+        Range of coordinates (nm) in 'dim' to evaluate
+    data_path: str
+        Filepath to save txt files
     frame_range: Python range() (optional)
         Range of frames to calculate number density function over
     maxs: array (optional)
@@ -40,7 +42,6 @@ def calc_number_density(gro_file, trj_file, top_file, area,
     resnames = np.unique([x.name for x in
                com_trj.topology.residues])
     rho_list = list()
-    #bin_width = (box_range[1] - box_range[0]) / n_bins
     
     for resname in resnames:
         sliced = com_trj.topology.select('resname {}'.format(resname))
@@ -81,21 +82,18 @@ def calc_number_density(gro_file, trj_file, top_file, area,
                     rho += np.histogram(frame.xyz[0, indices, dim].
                             flatten(),bins=n_bins, range=(box_range[0],
                                 box_range[1]))[0]
-            """else:
-                rho += np.histogram(frame.xyz[0, indices, dim].flatten(), 
-                          bins=n_bins, range=(box_range[0],
-                          box_range[1]))[0]"""
-        rho = np.divide(rho, trj_slice.n_frames * area *
-                2 / n_bins)
-        """print('With specified bins, rho = {}'.format(rho))
-        test = np.divide(rho, trj_slice.n_frames * len(indices) 
-                * area * 8  / 1000)
-        print('With 1000 bins, rho = {}'.format(test))"""
-        rho_list.append(rho)
 
-    bin_list = bins[:-1]
-    
-    return(rho_list, bin_list)
+    np.savetxt('{0}/{1}-number-density.txt'.format(data_path, resname),
+        np.vstack(bins[:-1]+np.mean(bins[1][:2])-box_range[0],
+        rho[0]/(area*(bins[1]-bins[0])*(len(trj)-1))]).transpose())
+
+    #    rho = np.divide(rho, trj_slice.n_frames * area *
+    #            2 / n_bins)
+    #    rho_list.append(rho)
+
+    #bin_list = bins[:-1]
+    #
+    #return(rho_list, bin_list)
 
 
 def calc_number_lammps(lammpstrj, top_file, area,
