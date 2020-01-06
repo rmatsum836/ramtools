@@ -2,6 +2,7 @@ import numpy as np
 import mdtraj as md
 import warnings
 import mdtraj.core.element as Element
+import matplotlib.pyplot as plt
 
 def calc_number_density(coord_file, trj_file, bin_width, area, dim, box_range, data_path, resnames):
     """
@@ -60,3 +61,29 @@ def calc_number_density(coord_file, trj_file, bin_width, area, dim, box_range, d
 
         with open('{0}/resnames.txt'.format(data_path), "a") as myfile:
             myfile.write(resname + '\n')
+
+def plot_mxene_numden(resnames, filename='number_density.pdf'):
+    """
+    function to plot number density profiles from txt files
+
+    Paramters
+    ---------
+    resnames: list
+        list of resnames to find corresponding txt files
+    filename: str
+        Name of PDF file to return
+    
+    Returns
+    -------
+    Number density profile in PDF format
+    """
+
+    fig, ax = plt.subplots()
+    for f in resnames:
+        data = np.loadtxt('{}-number-density.txt'.format(f))
+        ax.plot(data[:,0], data[:,1], label=f)
+
+    plt.xlabel('Position on Surface (nm)')
+    plt.ylabel('Number Density')
+    plt.legend()
+    plt.savefig(filename)
