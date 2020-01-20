@@ -62,7 +62,7 @@ def calc_number_density(coord_file, trj_file, bin_width, area, dim, box_range, d
         with open('{0}/resnames.txt'.format(data_path), "a") as myfile:
             myfile.write(resname + '\n')
 
-def plot_mxene_numden(resnames, filename='number_density.pdf'):
+def plot_mxene_numden(resnames, ylim, filename='number_density.pdf'):
     """
     function to plot number density profiles from txt files
 
@@ -77,13 +77,47 @@ def plot_mxene_numden(resnames, filename='number_density.pdf'):
     -------
     Number density profile in PDF format
     """
+    def get_color(atom_name):
+        """ Get color for matplotlib plot for each atom """
+        color_dict = {
+                'k': 'C0',
+                'li': 'C1',
+                'water': 'C2',
+                'water_o': 'C9',
+                'water_h': 'black',
+                'O': 'C3',
+                'OH': 'C4',
+                'F': 'C7'
+                }
+
+        return color_dict[atom_name]
+
+    def get_alpha(atom_name):
+        """ Get color for matplotlib plot for each atom """
+        alpha_dict = {
+                'k': 1,
+                'li': 1,
+                'water': 1,
+                'water_o': 1,
+                'water_h': 1,
+                'O': 0.2,
+                'OH': 0.2,
+                'F': 0.2
+                }
+
+        return alpha_dict[atom_name]
 
     fig, ax = plt.subplots()
     for f in resnames:
         data = np.loadtxt('{}-number-density.txt'.format(f))
-        ax.plot(data[:,0], data[:,1], label=f)
+        ax.plot(data[:,0], data[:,1],
+                label=f,
+                color=get_color(f),
+                alpha=get_alpha(f)
+                )
 
     plt.xlabel('Position on Surface (nm)')
-    plt.ylabel('Number Density')
+    plt.ylabel('Number Density (nm^-3)')
+    plt.ylim(ylim)
     plt.legend()
     plt.savefig(filename)
