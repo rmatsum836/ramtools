@@ -2,8 +2,7 @@ import numpy as np
 import mdtraj as md
 import scipy
 import os
-from utils.utils import read_xvg
-from scipy.integrate import simps
+from ramtools.utils.utils import read_xvg
 
 def get_energies(energy_file, volume):
     cmd = f'echo {volume} | gmx energy -f {energy_file} -vis'
@@ -31,9 +30,11 @@ def calc_green_kubo(trj_file, top_file, energy_file, temp=300):
     kb = 1.38e-23
 
     volume *= 1e-27
-    pressures *= 100000
-    coefficient = volume / (kb * T)
+    xy *= 100000
+    coefficient = volume / (kb * temp)
+    
+    import pdb; pdb.set_trace()
+    integral = [np.trapz(np.mean(xy[:i]*xy[0]), xy[:i]) for i in range(1, len(xy))] 
+    import pdb; pdb.set_trace()
 
-    integral = simps(xy[t]*xy[0], t)
-
-    return coefficient * integral
+    return coefficient * integral_list
