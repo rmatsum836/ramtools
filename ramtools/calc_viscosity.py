@@ -5,8 +5,9 @@ import os
 from ramtools.utils.utils import read_xvg
 
 def get_energies(energy_file, volume):
-    cmd = f'echo {volume} | gmx energy -f {energy_file} -vis'
-    os.system(cmd)
+    if not os.path.exists('energy.xvg'):
+        cmd = f'echo {volume} | gmx energy -f {energy_file} -vis'
+        os.system(cmd)
 
 def calc_green_kubo(trj_file, top_file, energy_file, temp=300):
     """ Calculate Green-Kubo Viscosity
@@ -18,23 +19,30 @@ def calc_green_kubo(trj_file, top_file, energy_file, temp=300):
     get_energies(energy_file, volume)
     data = read_xvg('energy.xvg')
     print("Data correctly loaded")
+    time = data[:,0]
     xy = data[:,2]
     xz = data[:,3]
     yz = data[:,7]
+    #xy *= 100000
+    #xy *= 100000
+    #xy *= 100000
    
-    #pressures = np.empty(shape=(len(xy), 3))
-    #for i in pressures:
-    #    pressures[i] = np.array(xy[i], xz[i], yz[i])
-    #xy_mean np.mean([xy[0]*i for i in xy])
+    pressures = list()
+    for i in range(len(xy)):
+        xy_mult = xy[i] * xy[0]
+        xz_mult = xz[i] * xz[0]
+        yz_mult = yz[i] * yz[0]
+        pressures.append(np.mean([xy_mult, xz_mult, yz_mult]))
+
+    #xy = [np.mean(xy[i] * xy[0]) for i in range(len(xy))]
 
     kb = 1.38e-23
 
     volume *= 1e-27
-    xy *= 100000
     coefficient = volume / (kb * temp)
-    
-    import pdb; pdb.set_trace()
-    integral = [np.trapz(np.mean(xy[:i]*xy[0]), xy[:i]) for i in range(1, len(xy))] 
-    import pdb; pdb.set_trace()
 
-    return coefficient * integral_list
+
+    #integral = [np.trapz(xy[:i], time[:i]) for i in range(len(xy))]
+    integral = [np.trapz(pressures[:i], time[:i]) for i in range(len(pressures))]
+  
+    return time, [val * coefficient  for val in integral]
