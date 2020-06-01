@@ -1,4 +1,18 @@
 import numpy as np
+import os
+import shutil
+import tempfile
+import contextlib
+
+
+@contextlib.contextmanager
+def temporary_cd(dir_path):
+    prev_dir = os.getcwd()
+    os.chdir(os.path.abspath(dir_path))
+    try:
+        yield
+    finally:
+        os.chdir(prev_dir)
 
 def read_xvg(fname):
     data=[]
