@@ -2,6 +2,8 @@ import mdtraj as md
 import numpy as np
 import textwrap
 
+from mdtraj.core.element import virtual_site
+
 def create_itp(itp_file, n_atoms, fx_const):
     """Create a GROMACS itp file for adding position restraints
 
