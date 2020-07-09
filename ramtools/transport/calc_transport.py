@@ -46,7 +46,7 @@ def calc_hfshear(energy_file, trj, temperature):
     Parameters
     ----------
     energy_file : str
-        GROMACS .edr file
+        GROMACS .xvg file, created by running "gmx energy -f energy.edr -vis"
     trj : str
         MDTraj trajectory
     temperatrue : flt
@@ -64,9 +64,6 @@ def calc_hfshear(energy_file, trj, temperature):
     volume = float(np.mean(trj.unitcell_volumes))
     volume *= 1e-27 * u.m**3
     temperature *= u.Kelvin
-
-    GPa = 1e9*u.Pa
-    u.define_unit("GPa", GPa)
 
     shear_bar, shear_std = _calc_mult(temperature, volume, pressures)
     shear_bar = shear_bar.in_units(u.GPa)

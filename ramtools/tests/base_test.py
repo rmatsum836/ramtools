@@ -10,6 +10,6 @@ class BaseTest:
 
     @pytest.fixture
     def water_trj(self):
-        trj = md.load(get_fn('spce.xtc'), top=get_fn('spce.gro'))[:100]
+        trj = md.load(get_fn('tip3p.xtc'), top=get_fn('tip3p.gro'))
 
         return trj
