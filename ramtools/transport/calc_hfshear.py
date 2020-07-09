@@ -3,15 +3,39 @@ import mdtraj as md
 import unyt as u
 
 
-def read_xvg(fname):
-    data=[]
-    with open(fname) as f:
-        for line in f:
-            # Lines with metadata or comments start with #, @
-            if not line.startswith(("@","#")):
-                data.append(np.array([float(s) for s in line.split()]))
-    data = np.vstack(data)
-    return data
+def calc_hfshear(energy_file, trj, temperature):
+    """ Calculate High-Frequency shear modulus of an MDTraj trajectory
+
+    Parameters
+    ----------
+    energy_file : str
+        GROMACS .edr file
+    trj : str
+        MDTraj trajectory
+    temperatrue : flt
+        Temperature in Kelvin
+
+    Returns
+    -------
+    shear_bar : unyt.array
+        average shear modulus
+    shear_std : unyt_array
+        stadndard deviation shear modulus
+    """
+    xy, xz, zy = _get_pressures(energy_file)
+    pressures = [np.mean([i,j,k]) for i,j,k in zip(xy,xz,zy)]
+    volume = float(np.mean(trj.unitcell_volumes))
+    volume *= 1e-27 * u.m**3
+    temperature *= u.Kelvin
+
+    GPa = 1e9*u.Pa
+    u.define_unit("GPa", GPa)
+
+    shear_bar, shear_std = _calc_mult(temperature, volume, pressures)
+    shear_bar = shear_bar.in_units(u.GPa)
+    shear_std = shear_std.in_units(u.GPa)
+
+    return shear_bar, shear_std
 
 
 def _calc_mult(temperature, volume, pressures):
@@ -48,20 +72,3 @@ def _get_pressures(energy_file):
     zy = data[:,6]
     
     return xy, xz, zy
-
-
-def calc_hfshear(energy_file, trj, temperature):
-    xy, xz, zy = _get_pressures(energy_file)
-    pressures = [np.mean([i,j,k]) for i,j,k in zip(xy,xz,zy)]
-    volume = float(np.mean(trj.unitcell_volumes))
-    volume *= 1e-27 * u.m**3
-    temperature *= u.Kelvin
-
-    GPa = 1e9*u.Pa
-    u.define_unit("GPa", GPa)
-
-    shear_bar, shear_std = _calc_mult(temperature, volume, pressures)
-    shear_bar = shear_bar.in_units(u.GPa)
-    shear_std = shear_std.in_units(u.GPa)
-
-    return shear_bar, shear_std
