@@ -2,22 +2,20 @@ import numpy as np
 import os
 import sys
 import mdtraj as md
-from mtools.gromacs.gromacs import make_comtrj
+from ramtools.utils.gromacs_tools import make_comtrj
 import matplotlib as mpl 
 import matplotlib.pyplot as plt
 
 
-def calc_number_density(gro_file, trj_file, area,
+def calc_number_density(trj, area,
         dim, box_range, n_bins, frame_range=None,maxs=None, mins=None):
     """
     Calculate a 1-dimensional number density profile for each residue
 
     Parameters
     ----------
-    gro_file : str
-        GROMACS '.gro' file to load 
-    trj_file : str
-        Trajectory to load
+    trj : MDTraj.trajectory
+        Trajectory
     area : int or float
         Area of box in dimensions where number density isn't calculated
     dim : int
@@ -36,7 +34,6 @@ def calc_number_density(gro_file, trj_file, area,
     Attributes
     ----------
     """
-    trj = md.load(trj_file, top=gro_file)
     com_trj = make_comtrj(trj)
     resnames = np.unique([x.name for x in
                com_trj.topology.residues])
@@ -82,6 +79,7 @@ def calc_number_density(gro_file, trj_file, area,
                     rho += np.histogram(frame.xyz[0, indices, dim].
                             flatten(),bins=n_bins, range=(box_range[0],
                                 box_range[1]))[0]
+
         rho = np.divide(rho, trj_slice.n_frames*area*(bins[1]-bins[0]))
         rho_list.append(rho)
         res_list.append(resname)

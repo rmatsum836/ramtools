@@ -2,7 +2,7 @@ import numpy as np
 import os
 import sys
 import mdtraj as md
-from mtools.gromacs.gromacs import make_comtrj
+from ramtools.utils.gromacs_tools import make_comtrj
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
