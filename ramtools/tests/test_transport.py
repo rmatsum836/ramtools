@@ -15,7 +15,7 @@ class TestTransport(BaseTest):
 
         calc_transport.calc_conductivity(n_mol, volume, D_cat, D_an)
 
-    def test_hfshear(self, il_trj):
-        edr = get_fn('il.edr')
+    def test_hfshear(self, water_trj):
+        xvg = get_fn('energy.xvg')
 
-        calc_transport.calc_hfshear(edr, il_trj, temperature=300)
+        calc_transport.calc_hfshear(xvg, water_trj, temperature=300)
