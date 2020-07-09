@@ -7,9 +7,9 @@ from ramtools.utils.io import get_fn
 
 class TestTransport(BaseTest):
 
-    def test_conductivity(self, il_trj):
+    def test_conductivity(self):
         n_mol = 240
-        volume = np.mean(il_trj.unitcell_volumes)
+        volume = 141
         D_cat = 2e-10
         D_an = 2e-10
 
