@@ -3,11 +3,19 @@ import numpy as np
 
 from ramtools.tests.base_test import BaseTest
 from ramtools.transport import calc_transport
+from ramtools.utils.io import get_fn
 
 class TestTransport(BaseTest):
 
-    def test_conductivity(self, water_trj):
-        pass
+    def test_conductivity(self, il_trj):
+        n_mol = 240
+        volume = np.mean(il_trj.unitcell_volumes)
+        D_cat = 2e-10
+        D_an = 2e-10
 
-    def test_hfshear(self, water_trj):
-        pass
+        calc_transport.calc_conductivity(n_mol, volume, D_cat, D_an)
+
+    def test_hfshear(self, il_trj):
+        edr = get_fn('il.edr')
+
+        calc_transport.calc_hfshear(edr, il_trj, temperature=300)

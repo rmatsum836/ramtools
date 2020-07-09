@@ -2,6 +2,8 @@ import numpy as np
 import mdtraj as md
 import unyt as u
 
+from ramtools.utils.read_files import read_xvg
+
 
 def calc_conductivity(N, V, D_cat, D_an, q=1, T=300):
     """ Calculate Nernst-Einstein Conductivity
