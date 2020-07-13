@@ -3,9 +3,10 @@ import mdtraj as md
 import unyt as u
 
 from ramtools.utils.read_files import read_xvg
+from scipy import stats
 
 
-def calc_conductivity(N, V, D_cat, D_an, q=1, T=300):
+def calc_ne_conductivity(N, V, D_cat, D_an, q=1, T=300):
     """ Calculate Nernst-Einstein Conductivity
 
     Parameters
@@ -39,6 +40,59 @@ def calc_conductivity(N, V, D_cat, D_an, q=1, T=300):
 
     return cond
 
+def calc_eh_conductivity(trj, N, V, cat_resname, an_resname, chunk=200, q=1, T=300):
+    """ Calculate Einstein-Helfand conductivity
+    Parameters
+    ----------
+    gromacs_trj : GROMACS trr or xtc file
+        GROMACS trajectory
+    gromacs_gro : GROMACS gro file
+        GROMACS coordinate file
+    N : int
+        Number of ions
+    V : float
+        Volume of simulation box
+    cat_resname : str
+        Residue name of cation
+    an_resname : str
+        Residue name of anion
+    q : float, default=1
+        Charge of ions in element charge units
+    T : float, default=300
+        Temperature of system in Kelvin
+
+    Returns
+    -------
+    cond : unyt.array
+        Einstein-Helfand conductivity
+    """
+
+    running_avg = np.zeros(chunk)
+    for i,trj in enumerate(md.iterload(trj_file, top=gro_file, chunk=chunk, skip=100)):
+        if i == 0:
+            trj_time = trj.time
+        if trj.n_frames != chunk:
+            continue
+        trj = trj.atom_slice(trj.top.select(f'resname {cat_resname} {an_resname}'))
+        M = dipole_moments_md(trj, new_charges)
+        running_avg += [np.linalg.norm((M[i] - M[0]))**2 for i in range(len(M))]
+
+        x = (trj_time - trj_time[0]).reshape(-1)
+        y = running_avg / i
+
+    slope, intercept, r_value, p_value, std_error = stats.linregress(
+            x, y)
+
+    kB = 1.38e-23 * u.joule / u.Kelvin
+    V = np.mean(trj_frame.unitcell_volumes, axis=0) * u.nm ** 3
+    T *= u.Kelvin
+
+    sigma = slope * (uelementary_charge * u.nm) ** 2 / u.picosecond / (6 * V * kB * T)
+    seimens = u.seconds ** 3 * u.ampere ** 2 / (u.kilogram * u.meter ** 2)
+    sigma = sigma.in_units_of(u.seimens / u.meter)
+
+    return sigma
+
 
 def calc_hfshear(energy_file, trj, temperature):
     """ Calculate High-Frequency shear modulus of an MDTraj trajectory
@@ -70,6 +124,19 @@ def calc_hfshear(energy_file, trj, temperature):
     shear_std = shear_std.in_units(u.GPa)
 
     return shear_bar, shear_std
+
+def dipole_moments_md(traj, charges):
+    local_indices = np.array([(a.index, a.residue.atom(0).index) for a in traj.top.atoms], dtype='int32')
+    local_displacements = md.compute_displacements(traj, local_indices, periodic=False)
+
+    molecule_indices = np.array([(a.residue.atom(0).index, 0) for a in traj.top.atoms], dtype='int32')
+    molecule_displacements = md.compute_displacements(traj, molecule_indices, periodic=False)
+
+    xyz = local_displacements + molecule_displacements
+
+    moments = xyz.transpose(0, 2, 1).dot(charges)
+
+    return moments
 
 
 def _calc_mult(temperature, volume, pressures):
