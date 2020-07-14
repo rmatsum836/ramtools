@@ -62,7 +62,7 @@ def calc_number_density(coord_file, trj_file, bin_width, area, dim, box_range, d
         with open('{0}/resnames.txt'.format(data_path), "a") as myfile:
             myfile.write(resname + '\n')
 
-def plot_mxene_numden(resnames, ylim, path, filename='number_density.pdf'):
+def plot_mxene_numden(resnames, ylim, path, filename='number_density.pdf', shift=None):
     """
     function to plot number density profiles from txt files
 
@@ -118,11 +118,18 @@ def plot_mxene_numden(resnames, ylim, path, filename='number_density.pdf'):
     fig, ax = plt.subplots()
     for f in resnames:
         data = np.loadtxt('{}/{}-number-density.txt'.format(path, f))
-        ax.plot(data[:,0], data[:,1],
-                label=f,
-                color=get_color(f),
-                alpha=get_alpha(f)
-                )
+        if shift:
+            ax.plot(data[:,0]-shift, data[:,1],
+                    label=f,
+                    color=get_color(f),
+                    alpha=get_alpha(f)
+                    )
+        else:
+            ax.plot(data[:,0], data[:,1],
+                    label=f,
+                    color=get_color(f),
+                    alpha=get_alpha(f)
+                    )
 
     plt.xlabel('Position on Surface (nm)')
     plt.ylabel('Number Density (nm^-3)')
@@ -130,7 +137,7 @@ def plot_mxene_numden(resnames, ylim, path, filename='number_density.pdf'):
     plt.legend()
     plt.savefig(filename)
 
-def calc_gmx_number_density(coord_file, trj_file, bin_width, area, dim, box_range, data_path, resnames):
+def calc_gmx_number_density(coord_file, trj_file, bin_width, area, dim, box_range, data_path, resnames, shift=None):
     """
     Calculate a 1-dimensional number density profile for each residue specifically for mxene water adsorption study
 
@@ -181,9 +188,14 @@ def calc_gmx_number_density(coord_file, trj_file, bin_width, area, dim, box_rang
             bins=np.linspace(box_range[0], box_range[1],
             num=1+round((box_range[1]-box_range[0])/bin_width)))
 
-        np.savetxt('{0}/{1}-number-density.txt'.format(data_path, resname),
-            np.vstack([x[1][:-1]+np.mean(x[1][:2])-box_range[0],
-            x[0]/(area*bin_width*(len(traj)-1))]).transpose())
+        if shift:
+            np.savetxt('{0}/{1}-number-density.txt'.format(data_path, resname),
+                np.vstack([x[1][:-1]+np.mean(x[1][:2])-box_range[0]-shift,
+                x[0]/(area*bin_width*(len(traj)-1))]).transpose())
+        else:
+            np.savetxt('{0}/{1}-number-density.txt'.format(data_path, resname),
+                np.vstack([x[1][:-1]+np.mean(x[1][:2])-box_range[0],
+                x[0]/(area*bin_width*(len(traj)-1))]).transpose())
 
         with open('{0}/resnames.txt'.format(data_path), "a") as myfile:
             myfile.write(resname + '\n')
