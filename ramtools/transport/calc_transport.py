@@ -14,7 +14,7 @@ def calc_ne_conductivity(N, V, D_cat, D_an, q=1, T=300):
     N : int
         Number of ions
     V : float
-        Volume of simulation box
+        Volume of simulation box in nm^3
     D_cat : float
         Diffusivity of cation in m^2/s
     D_an : float
@@ -35,18 +35,21 @@ def calc_ne_conductivity(N, V, D_cat, D_an, q=1, T=300):
     kT = T * 1.3806488e-23 * u.joule
     q *= u.elementary_charge
     q = q.to('Coulomb')
+    V *= u.nm ** 3
+    V = V.to('m**3')
 
     cond = N / (V*kT) * q ** 2 * (D_cat + D_an)
 
     return cond
 
-def calc_eh_conductivity(trj, N, V, cat_resname, an_resname, chunk=200, q=1, T=300):
+def calc_eh_conductivity(trj_file, gro_file, N, V, cat_resname, an_resname, chunk=200, q=1, T=300,
+        skip=100):
     """ Calculate Einstein-Helfand conductivity
     Parameters
     ----------
-    gromacs_trj : GROMACS trr or xtc file
+    trj_file : GROMACS trr or xtc file
         GROMACS trajectory
-    gromacs_gro : GROMACS gro file
+    gro_file : GROMACS gro file
         GROMACS coordinate file
     N : int
         Number of ions
@@ -60,6 +63,8 @@ def calc_eh_conductivity(trj, N, V, cat_resname, an_resname, chunk=200, q=1, T=3
         Charge of ions in element charge units
     T : float, default=300
         Temperature of system in Kelvin
+    skip : int, default=100
+        Number of frames in trajectory to skip
 
     Returns
     -------
@@ -68,28 +73,32 @@ def calc_eh_conductivity(trj, N, V, cat_resname, an_resname, chunk=200, q=1, T=3
     """
 
     running_avg = np.zeros(chunk)
-    for i,trj in enumerate(md.iterload(trj_file, top=gro_file, chunk=chunk, skip=100)):
+    for i,trj in enumerate(md.iterload(trj_file, top=gro_file, chunk=chunk, skip=skip)):
         if i == 0:
             trj_time = trj.time
         if trj.n_frames != chunk:
             continue
-        trj = trj.atom_slice(trj.top.select(f'resname {cat_resname} {an_resname}'))
-        M = dipole_moments_md(trj, new_charges)
+        try:
+            trj = trj.atom_slice(trj.top.select(f'resname {cat_resname} {an_resname}'))
+        except:
+            print("Not slicing trajectory")
+        M = dipole_moments_md(trj, q)
         running_avg += [np.linalg.norm((M[i] - M[0]))**2 for i in range(len(M))]
 
-        x = (trj_time - trj_time[0]).reshape(-1)
-        y = running_avg / i
+    x = (trj_time - trj_time[0]).reshape(-1)
+    y = running_avg / i
 
+    # TODO: Find where slope becomes linear
     slope, intercept, r_value, p_value, std_error = stats.linregress(
             x, y)
 
     kB = 1.38e-23 * u.joule / u.Kelvin
-    V = np.mean(trj_frame.unitcell_volumes, axis=0) * u.nm ** 3
+    V *= u.nm ** 3
     T *= u.Kelvin
 
-    sigma = slope * (uelementary_charge * u.nm) ** 2 / u.picosecond / (6 * V * kB * T)
-    seimens = u.seconds ** 3 * u.ampere ** 2 / (u.kilogram * u.meter ** 2)
-    sigma = sigma.in_units_of(u.seimens / u.meter)
+    sigma = slope * (u.elementary_charge * u.nm) ** 2 / u.picosecond / (6 * V * kB * T)
+    seimens = u.second ** 3 * u.ampere ** 2 / (u.kilogram * u.meter ** 2)
+    sigma = sigma.to(seimens / u.meter)
 
     return sigma
 
