@@ -31,8 +31,14 @@ def calc_number_density(trj, area,
     mins : array (optional)
         Minimum coordinate to evalute
     
-    Attributes
-    ----------
+    Returns
+    -------
+    rho_list : list
+        A list of lists containing number density for each bin
+    bin_list : list
+        A list of bins
+    res_list : list
+        A list containing residue names
     """
     com_trj = make_comtrj(trj)
     resnames = np.unique([x.name for x in
