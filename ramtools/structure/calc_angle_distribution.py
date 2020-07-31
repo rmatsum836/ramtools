@@ -21,7 +21,7 @@ def angle_between(v1, v2):
 
     return theta
 
-def calc_water_angle(trj_file, gro_file, cutoff, system, dim=2):
+def calc_water_angle(trj_file, gro_file, cutoff, dim=2, filepath=''):
     """ Calculate angle distribution between a water molecule vector and normal of
     a surface
 
@@ -39,10 +39,10 @@ def calc_water_angle(trj_file, gro_file, cutoff, system, dim=2):
     ----------
     trj_file : trajectory file
         MD trajectory to load
-    gro_file : GROMACS gro file
-        MD coordinates to load
+    gro_file : Coordinate file
+        MD coordinates to load.  MOL2 file is preferred as it contains bond information.
     cutoff : float
-        Cutoff to analyze molecules in z-direction
+        Cutoff to analyze molecules in z-direction (angstroms)
     dim : int
         Dimension of surface vector
     """
@@ -53,14 +53,17 @@ def calc_water_angle(trj_file, gro_file, cutoff, system, dim=2):
     else:
         normal_vector = [0, 0, 1]
 
-    universe = mda.Universe(gro_file, trj_file)
+    trj_str = f'{filepath}/{trj_file}'
+    gro_str = f'{filepath}/{gro_file}'
+
+    universe = mda.Universe(gro_str, trj_str)
 
     water_groups = universe.select_atoms('resname SOL')
     print("Unwrapping water molecules")
     transform = transformations.unwrap(water_groups)
     universe.trajectory.add_transformations(transform)
     print("Finished unwrapping water molecules")
-    coordinates = [water_groups.positions for ts in universe.trajectory[5000:]]
+    coordinates = [water_groups.positions for ts in universe.trajectory]
     angles = list()
     radians = list()
     print("Starting to analyze vectors ... ")
@@ -76,7 +79,7 @@ def calc_water_angle(trj_file, gro_file, cutoff, system, dim=2):
             vector = [xyz[0][i] - fit[i] for i in range(3)]
 
             angle = angle_between(np.array([vector[0], vector[1], vector[2]]),
-                    np.array(normal_vector))
+                    np.array(normal_vector)) * (180 / np.pi)
 
             angle_in_radians = angle * np.pi / 180
             radians.append(angle_in_radians)
@@ -94,11 +97,10 @@ def calc_water_angle(trj_file, gro_file, cutoff, system, dim=2):
     plt.xlim((0, 181))
     plt.ylabel('Count')
     plt.xlabel('Angle (Deg)')
-    plt.savefig(f'inverted_{system}_angles_{cutoff}.pdf')
     fig, ax = plt.subplots()
     #plt.bar(new_x, new_x_hist)
     plt.bar(new_x, y)
     plt.xlim((0, 181))
     plt.ylabel('Count')
     plt.xlabel('Angle (Deg)')
-    plt.savefig(f'water_angles.pdf')
+    plt.savefig(f'{filepath}/water_angles.pdf')
