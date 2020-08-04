@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 
 
 def calc_number_density(trj, area,
-        dim, box_range, n_bins, frame_range=None,maxs=None, mins=None):
+        dim, box_range, n_bins, shift=True, frame_range=None, maxs=None, mins=None):
     """
     Calculate a 1-dimensional number density profile for each residue
 
@@ -24,6 +24,8 @@ def calc_number_density(trj, area,
         Range of coordinates in 'dim' to evaluate
     n_bins : int
         Number of bins in histogram
+    shift : boolean, default=True
+        Shift bins to zero if True
     frame_range : Python range() (optional)
         Range of frames to calculate number density function over
     maxs : array (optional)
@@ -90,9 +92,17 @@ def calc_number_density(trj, area,
         rho_list.append(rho)
         res_list.append(resname)
 
-    bin_list = bins[:-1]
+    new_bins = list()
+    for idx, bi in enumerate(bins):
+        if (idx+1) >= len(bins):
+            continue
+        mid = (bins[idx] + bins[idx+1])/2
+        new_bins.append(mid)
+
+    if shift:
+        new_bins = [(bi-new_bins[0]) for bi in new_bins]
     
-    return (rho_list, bin_list, res_list)
+    return (rho_list, new_bins, res_list)
 
 def calc_number_lammps(lammpstrj, top_file, area,
         dim, box_range, n_bins, frame_range=None,maxs=None, mins=None):
