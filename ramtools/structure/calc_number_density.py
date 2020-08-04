@@ -25,7 +25,7 @@ def calc_number_density(trj, area,
     n_bins : int
         Number of bins in histogram
     shift : boolean, default=True
-        Shift bins to zero if True
+        Shift center to zero if True
     frame_range : Python range() (optional)
         Range of frames to calculate number density function over
     maxs : array (optional)
@@ -100,7 +100,12 @@ def calc_number_density(trj, area,
         new_bins.append(mid)
 
     if shift:
-        new_bins = [(bi-new_bins[0]) for bi in new_bins]
+        middle = float(n_bins / 2)
+        if middle % 2 != 0:
+            shift_value = new_bins[int(middle - 0.5)]
+        else:
+            shift_value = new_bins[int(middle)]
+        new_bins = [(bi-shift_value) for bi in new_bins]
     
     return (rho_list, new_bins, res_list)
 
