@@ -13,3 +13,9 @@ class BaseTest:
         trj = md.load(get_fn('tip3p.xtc'), top=get_fn('tip3p.gro'))
 
         return trj
+
+    @pytest.fixture
+    def gph_pore(self):
+        trj = md.load(get_fn('nvt_small.trr'), top=get_fn('nvt.gro'))
+  
+        return trj
