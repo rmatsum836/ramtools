@@ -19,3 +19,10 @@ class BaseTest:
         trj = md.load(get_fn('nvt_small.trr'), top=get_fn('nvt.gro'))
   
         return trj
+
+    @pytest.fixture
+    def gph_pore_mda(self):
+        trr = get_fn('nvt_small.trr')
+        mol2 = get_fn('init.mol2')
+  
+        return trr, mol2

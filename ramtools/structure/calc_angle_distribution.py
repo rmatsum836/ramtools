@@ -188,13 +188,13 @@ def calc_water_order_parameter(trj_file, gro_file, cutoffs, bin_width=0.2, shift
             angle_position[xyz[0][dim]] = angle_in_radians
 
     distance_dict = dict()
-    for dis in np.arange(cutoffs[0], cutoffs[1]+step, step=step):
-        if np.allclose(dis+step, cutoffs[1]+step):
+    for dis in np.arange(cutoffs[0], cutoffs[1]+bin_width, step=bin_width):
+        if np.allclose(dis+bin_width, cutoffs[1]+bin_width):
             continue
-        distance_dict[(dis+(dis+step))/2] = list()
+        distance_dict[(dis+(dis+bin_width))/2] = list()
         for pos, angle in angle_position.items():
-            if pos > dis and pos < (dis+step):
-                distance_dict[(dis+(dis+step))/2].append(angle)
+            if pos > dis and pos < (dis+bin_width):
+                distance_dict[(dis+(dis+bin_width))/2].append(angle)
 
     s_order_dict = dict()
     for dis, angles in distance_dict.items():
