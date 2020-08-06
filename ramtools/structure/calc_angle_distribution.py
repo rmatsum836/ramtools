@@ -118,7 +118,7 @@ def calc_water_angle(trj_file, gro_file, cutoff, dim=2, filepath=''):
     plt.xlabel('Angle (Deg)')
     plt.savefig(f'{filepath}/water_angles.pdf')
 
-def calc_water_order_parameter(trj_file, gro_file, cutoffs, shift=True, dim=2, filepath=''):
+def calc_water_order_parameter(trj_file, gro_file, cutoffs, bin_width=0.2, shift=True, dim=2, filepath=''):
     """ Calculate the order parameter between a water molecule vector and normal of
     a surface
     DOI: 10.1021/la0347354
@@ -139,12 +139,16 @@ def calc_water_order_parameter(trj_file, gro_file, cutoffs, shift=True, dim=2, f
         MD trajectory to load
     gro_file : Coordinate file
         MD coordinates to load.  MOL2 file is preferred as it contains bond information.
+    cutoffs : list or tuple
+        Dimensions of slitpore to consider (angstroms)
+    bin_width : float, default = 0.2 angstroms
+        bin width of histogram
     shift : boolean, default=True
         Shift center to 0 if True
-    cutoff : list or tuple
-        Dimensions of slitpore to consider (angstroms)
     dim : int
         Dimension of surface vector
+    filepath : str, default=''
+        filepath to save plot to
     """
     if dim == 0:
         normal_vector = [1, 0, 0]
@@ -163,7 +167,7 @@ def calc_water_order_parameter(trj_file, gro_file, cutoffs, shift=True, dim=2, f
     transform = transformations.unwrap(water_groups)
     universe.trajectory.add_transformations(transform)
     print("Finished unwrapping water molecules")
-    coordinates = [water_groups.positions for ts in universe.trajectory[9000:]]
+    coordinates = [water_groups.positions for ts in universe.trajectory]
     print("Starting to analyze vectors ... ")
     angle_position = dict()
     for frame_num, frame in enumerate(coordinates):
@@ -184,7 +188,6 @@ def calc_water_order_parameter(trj_file, gro_file, cutoffs, shift=True, dim=2, f
             angle_position[xyz[0][dim]] = angle_in_radians
 
     distance_dict = dict()
-    step = 0.1
     for dis in np.arange(cutoffs[0], cutoffs[1]+step, step=step):
         if np.allclose(dis+step, cutoffs[1]+step):
             continue
@@ -211,9 +214,10 @@ def calc_water_order_parameter(trj_file, gro_file, cutoffs, shift=True, dim=2, f
     if shift:
         plt.plot([i/10 for i in new_bins], s_order_dict.values())
     else:
-        plt.plot(s_order_dict.keys()/10, s_order_dict.values())
+        plt.plot([i/10 for i in s_order_dict.keys()], s_order_dict.values())
     plt.xlabel('Distance (nm)')
     plt.ylabel('S')
-    plt.xlim((-1, 1))
+    if shift:
+        plt.xlim((-1, 1))
     plt.ylim((-0.5, 0.25))
     plt.savefig(f'{filepath}/s_order.pdf')
