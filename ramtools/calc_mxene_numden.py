@@ -3,6 +3,7 @@ import mdtraj as md
 import warnings
 import mdtraj.core.element as Element
 import matplotlib.pyplot as plt
+import os
 
 def calc_number_density(coord_file, trj_file, bin_width, area, dim, box_range, data_path, resnames):
     """
@@ -166,6 +167,11 @@ def calc_gmx_number_density(coord_file, trj_file, bin_width, area, dim, box_rang
     """
 
     first_frame = md.load_frame(trj_file, top=coord_file, index=0)
+
+    if os.path.exists(data_path):
+        pass
+    else:
+        os.mkdir(os.path.join(os.path.abspath(os.getcwd()), data_path))
 
     open('{0}/resnames.txt'.format(data_path), 'w').close()
 
