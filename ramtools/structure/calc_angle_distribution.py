@@ -104,3 +104,5 @@ def calc_water_angle(trj_file, gro_file, cutoff, dim=2, filepath=''):
     plt.ylabel('Count')
     plt.xlabel('Angle (Deg)')
     plt.savefig(f'{filepath}/water_angles.pdf')
+
+    return new_x, y
