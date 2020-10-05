@@ -21,7 +21,7 @@ def angle_between(v1, v2):
 
     return theta
 
-def calc_water_angle(trj_file, gro_file, cutoff, dim=2, filepath=''):
+def calc_water_angle(trj_file, gro_file, cutoff, dim=2, filepath='', box_dims=None, chunk=None):
     """ Calculate angle distribution between a water molecule vector and normal of
     a surface
 
@@ -57,13 +57,19 @@ def calc_water_angle(trj_file, gro_file, cutoff, dim=2, filepath=''):
     gro_str = f'{filepath}/{gro_file}'
 
     universe = mda.Universe(gro_str, trj_str)
+    if isinstance(box_dims, (tuple, list, np.ndarray)):
+        universe.dimensions = np.array([box_dims[0], box_dims[1], box_dims[2], 90, 90, 90])
+
 
     water_groups = universe.select_atoms('resname SOL')
     print("Unwrapping water molecules")
     transform = transformations.unwrap(water_groups)
     universe.trajectory.add_transformations(transform)
     print("Finished unwrapping water molecules")
-    coordinates = [water_groups.positions for ts in universe.trajectory]
+    if chunk:
+        coordinates = [water_groups.positions for ts in universe.trajectory[chunk:]]
+    else:
+        coordinates = [water_groups.positions for ts in universe.trajectory]
     angles = list()
     radians = list()
     print("Starting to analyze vectors ... ")
@@ -104,3 +110,5 @@ def calc_water_angle(trj_file, gro_file, cutoff, dim=2, filepath=''):
     plt.ylabel('Count')
     plt.xlabel('Angle (Deg)')
     plt.savefig(f'{filepath}/water_angles.pdf')
+
+    return new_x, y
