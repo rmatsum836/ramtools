@@ -138,7 +138,7 @@ def plot_mxene_numden(resnames, ylim, path, filename='number_density.pdf', shift
     plt.legend()
     plt.savefig(filename)
 
-def calc_gmx_number_density(coord_file, trj_file, bin_width, area, dim, box_range, data_path, resnames, shift=None):
+def calc_gmx_number_density(coord_file, trj_file, bin_width, area, dim, box_range, data_path, resnames, shift=None, chunk=None):
     """
     Calculate a 1-dimensional number density profile for each residue specifically for mxene water adsorption study
 
@@ -160,6 +160,8 @@ def calc_gmx_number_density(coord_file, trj_file, bin_width, area, dim, box_rang
         Path to save txt file out to
     resnames: dict
         Contains residues to look at
+    chunk: int, default=None
+        Chunk of trajectory to consider
 
     
     Attributes
@@ -179,6 +181,9 @@ def calc_gmx_number_density(coord_file, trj_file, bin_width, area, dim, box_rang
         traj = md.load(trj_file, top=coord_file,
             atom_indices=first_frame.topology.select('{}'
                 .format(restype)))
+  
+        if chunk:
+            traj = traj[chunk:]
 
         indices = [[at.index for at in compound.atoms]
             for compound in list(traj.topology.residues)]
