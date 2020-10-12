@@ -188,9 +188,7 @@ def calc_water_order_parameter(trj_file, gro_file, cutoffs, bin_width=0.2, shift
             angle_position[xyz[0][dim]] = angle_in_radians
 
     distance_dict = dict()
-    for dis in np.arange(cutoffs[0], cutoffs[1]+bin_width, step=bin_width):
-        if np.allclose(dis+bin_width, cutoffs[1]+bin_width):
-            continue
+    for dis in np.arange(cutoffs[0], cutoffs[1], step=bin_width):
         distance_dict[(dis+(dis+bin_width))/2] = list()
         for pos, angle in angle_position.items():
             if pos > dis and pos < (dis+bin_width):
@@ -202,22 +200,22 @@ def calc_water_order_parameter(trj_file, gro_file, cutoffs, bin_width=0.2, shift
 
     if shift:
         new_bins = list(s_order_dict.keys())
-        middle = float(len(s_order_dict) / 2)
-        if middle % 2 != 0:
-            shift_value = new_bins[int(middle - 0.5)]
-        else:
-            shift_value = new_bins[int(middle)]
+        shift_value = (cutoffs[1] - cutoffs[0]) / 2 + cutoffs[0]
         new_bins = [(bi-shift_value) for bi in new_bins]
 
     fig, ax = plt.subplots()
     # Divide by 10 to go to nm
     if shift:
-        plt.plot([i/10 for i in new_bins], s_order_dict.values())
+        final_bins = [i/10 for i in new_bins]
+        plt.plot(final_bins, s_order_dict.values())
     else:
-        plt.plot([i/10 for i in s_order_dict.keys()], s_order_dict.values())
+        final_bins = [i/10 for i in s_order_dict.keys()]
+        plt.plot(final_bins, s_order_dict.values())
     plt.xlabel('Distance (nm)')
     plt.ylabel('S')
     if shift:
         plt.xlim((-1, 1))
     plt.ylim((-0.5, 0.25))
     plt.savefig(f'{filepath}/s_order.pdf')
+    np.savetxt(f'{filepath}/s_order.txt',
+               np.transpose(np.vstack([final_bins, list(s_order_dict.values())])))
