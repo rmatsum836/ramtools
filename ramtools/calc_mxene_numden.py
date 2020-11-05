@@ -73,6 +73,8 @@ def plot_mxene_numden(resnames, ylim, path, filename='number_density.pdf', shift
         list of resnames to find corresponding txt files
     filename: str
         Name of PDF file to return
+    shift: float, default=None
+        Shift coordinates by this value
     
     Returns
     -------
@@ -160,6 +162,8 @@ def calc_gmx_number_density(coord_file, trj_file, bin_width, area, dim, box_rang
         Path to save txt file out to
     resnames: dict
         Contains residues to look at
+    shift: float, default=None
+        shift coordinates by this value
     chunk: int, default=None
         Chunk of trajectory to consider
 
@@ -195,18 +199,19 @@ def calc_gmx_number_density(coord_file, trj_file, bin_width, area, dim, box_rang
                 if atom.element in [Element.virtual, Element.virtual_site]:
                     atom.element = Element.hydrogen
 
-        x = np.histogram(traj.xyz[:, 1:, dim].reshape((-1, 1)),
+        hist, bins = np.histogram(traj.xyz[:, 1:, dim].reshape((-1, 1)),
             bins=np.linspace(box_range[0], box_range[1],
             num=1+round((box_range[1]-box_range[0])/bin_width)))
+        bins_center = (bins[:-1] + bins[1:]) / 2
 
         if shift:
             np.savetxt('{0}/{1}-number-density.txt'.format(data_path, resname),
-                np.vstack([x[1][:-1]+np.mean(x[1][:2])-box_range[0]-shift,
-                x[0]/(area*bin_width*(len(traj)-1))]).transpose())
+                np.vstack([bins_center - shift,
+                hist/(area*bin_width*(len(traj)-1))]).transpose())
         else:
             np.savetxt('{0}/{1}-number-density.txt'.format(data_path, resname),
-                np.vstack([x[1][:-1]+np.mean(x[1][:2])-box_range[0],
-                x[0]/(area*bin_width*(len(traj)-1))]).transpose())
+                np.vstack([bins_center,
+                hist/(area*bin_width*(len(traj)-1))]).transpose())
 
         with open('{0}/resnames.txt'.format(data_path), "a") as myfile:
             myfile.write(resname + '\n')
