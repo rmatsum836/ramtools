@@ -5,6 +5,7 @@ import mdtraj as md
 from ramtools.utils.gromacs_tools import make_comtrj
 import matplotlib as mpl 
 import matplotlib.pyplot as plt
+from functools import reduce
 
 
 def calc_number_density(trj, area,
@@ -47,6 +48,15 @@ def calc_number_density(trj, area,
                com_trj.topology.residues])
     rho_list = list()
     res_list = list()
+    if dim == 2:
+        dim1 = 0
+        dim2 = 1
+    if dim == 1:
+        dim1 = 0
+        dim2 = 2
+    if dim == 0:
+        dim1 = 1
+        dim2 = 2
     
     for resname in resnames:
         sliced = com_trj.topology.select('resname {}'.format(resname))
@@ -59,17 +69,21 @@ def calc_number_density(trj, area,
                           for compound in
                           list(frame.topology.residues)]
             else:
-                indices = np.intersect1d(
-                          np.intersect1d(np.where(frame.xyz[-1, :, 0]
-                              > mins[0]),
-                          np.where(frame.xyz[-1, :, 0] < maxs[0])),
-                          np.intersect1d(np.where(frame.xyz[-1, :, 1] 
+                indices = reduce(np.intersect1d, 
+                          (np.intersect1d(np.where(frame.xyz[-1, :, dim1]
+                              > mins[dim1]),
+                              np.where(frame.xyz[-1, :, dim1] < maxs[dim1])),
+                          np.intersect1d(np.where(frame.xyz[-1, :, dim2]
+                              > mins[dim2]),
+                              np.where(frame.xyz[-1, :, 0] < maxs[dim2])),
+                          np.intersect1d(np.where(frame.xyz[-1, :, dim] 
                               > box_range[0]),
-                          np.where(frame.xyz[-1, :, 1] < box_range[1])))
+                          np.where(frame.xyz[-1, :, dim] < box_range[1])))
+                )
 
             if frame_range:
                 if i == 0:
-                    x = np.histogram(frame.xyz[0,indices,dim].flatten(), 
+                    x = np.histogram(frame.xyz[0,indices, dim].flatten(), 
                         bins=n_bins, range=(box_range[0], box_range[1]))
                     rho = x[0]
                     bins = x[1]
@@ -79,7 +93,7 @@ def calc_number_density(trj, area,
                                 box_range[1]))[0]
             else:
                 if i == 0:
-                    x = np.histogram(frame.xyz[0,indices,dim].flatten(), 
+                    x = np.histogram(frame.xyz[0,indices, dim].flatten(), 
                         bins=n_bins, range=(box_range[0], box_range[1]))
                     rho = x[0]
                     bins = x[1]
@@ -148,6 +162,15 @@ def calc_atom_number_density(trj, area,
     """
     rho_list = list()
     res_list = list()
+    if dim == 2:
+        dim1 = 0
+        dim2 = 1
+    if dim == 1:
+        dim1 = 0
+        dim2 = 2
+    if dim == 0:
+        dim1 = 1
+        dim2 = 2
     
     for name, selection in atom_selection.items():
         sliced = trj.topology.select(selection)
@@ -160,13 +183,17 @@ def calc_atom_number_density(trj, area,
                           for compound in
                           list(frame.topology.residues)]
             else:
-                indices = np.intersect1d(
-                          np.intersect1d(np.where(frame.xyz[-1, :, 0]
-                              > mins[0]),
-                          np.where(frame.xyz[-1, :, 0] < maxs[0])),
-                          np.intersect1d(np.where(frame.xyz[-1, :, 1] 
+                indices = reduce(np.intersect1d, 
+                          (np.intersect1d(np.where(frame.xyz[-1, :, dim1]
+                              > mins[dim1]),
+                              np.where(frame.xyz[-1, :, dim1] < maxs[dim1])),
+                          np.intersect1d(np.where(frame.xyz[-1, :, dim2]
+                              > mins[dim2]),
+                              np.where(frame.xyz[-1, :, 0] < maxs[dim2])),
+                          np.intersect1d(np.where(frame.xyz[-1, :, dim] 
                               > box_range[0]),
-                          np.where(frame.xyz[-1, :, 1] < box_range[1])))
+                          np.where(frame.xyz[-1, :, dim] < box_range[1])))
+                )
 
             if frame_range:
                 if i == 0:
