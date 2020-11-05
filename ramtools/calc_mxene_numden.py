@@ -168,8 +168,10 @@ def calc_gmx_number_density(coord_file, trj_file, bin_width, area, dim, box_rang
         Chunk of trajectory to consider
 
     
-    Attributes
-    ----------
+    Returns
+    -------
+    bins: Bins of histogram
+    histogram_dict: dictionary of resname (key) and histogram values (value)
     """
 
     first_frame = md.load_frame(trj_file, top=coord_file, index=0)
@@ -180,7 +182,8 @@ def calc_gmx_number_density(coord_file, trj_file, bin_width, area, dim, box_rang
         os.mkdir(os.path.join(os.path.abspath(os.getcwd()), data_path))
 
     open('{0}/resnames.txt'.format(data_path), 'w').close()
-
+    
+    histogram_dict = dict()
     for resname, restype in resnames.items():
         traj = md.load(trj_file, top=coord_file,
             atom_indices=first_frame.topology.select('{}'
@@ -215,3 +218,7 @@ def calc_gmx_number_density(coord_file, trj_file, bin_width, area, dim, box_rang
 
         with open('{0}/resnames.txt'.format(data_path), "a") as myfile:
             myfile.write(resname + '\n')
+
+        histogram_dict[resname] = hist / (area*bin_width*(len(traj)-1))
+
+    return bins_center, histogram_dict
