@@ -56,7 +56,6 @@ for combo,name in zip(combos, names):
     pairs = trj.topology.select_pairs(selection1='name {}'.format(combo[0]),
             selection2='name {}'.format(combo[1]))
     g_r, edges = calc_rdf_histo(trj, pairs=pairs)
-    #plt.hist(g_r, bins=edges)
     width = 0.7 * (edges[1] - edges[0])
     center = (edges[:-1] + edges[1:]) / 2
     ax.bar(center, g_r, width=width)

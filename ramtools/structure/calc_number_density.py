@@ -2,52 +2,58 @@ import numpy as np
 import os
 import sys
 import mdtraj as md
-from mtools.gromacs.gromacs import make_comtrj
-import matplotlib as mpl
+from ramtools.utils.gromacs_tools import make_comtrj
+import matplotlib as mpl 
 import matplotlib.pyplot as plt
 
-def calc_number_density(gro_file, trj_file, top_file, area,
-        dim, box_range, n_bins, frame_range=None,maxs=None, mins=None):
+
+def calc_number_density(trj, area,
+        dim, box_range, n_bins, shift=True, frame_range=None, maxs=None, mins=None):
     """
     Calculate a 1-dimensional number density profile for each residue
 
     Parameters
     ----------
-    gro_file: str
-        GROMACS '.gro' file to load 
-    trj_file: str
-        Trajectory to load
-    top_file: str
-        GROMACS '.top' file to load
-    bin_width: int
-        Width (nm) of numpy histogram bins
-    dim: int
+    trj : MDTraj.trajectory
+        Trajectory
+    area : int or float
+        Area of box in dimensions where number density isn't calculated
+    dim : int
         Dimension to calculate number density profile (0,1 or 2)
-    box_range: array
+    box_range : array
         Range of coordinates in 'dim' to evaluate
-    frame_range: Python range() (optional)
+    n_bins : int
+        Number of bins in histogram
+    shift : boolean, default=True
+        Shift center to zero if True
+    frame_range : Python range() (optional)
         Range of frames to calculate number density function over
-    maxs: array (optional)
+    maxs : array (optional)
         Maximum coordinate to evaluate 
-    mins: array (optional)
+    mins : array (optional)
         Minimum coordinate to evalute
     
-    Attributes
-    ----------
+    Returns
+    -------
+    rho_list : list
+        A list of lists containing number density for each bin
+    bin_list : list
+        A list of bins
+    res_list : list
+        A list containing residue names
     """
-    trj = md.load(trj_file, top=gro_file)
     com_trj = make_comtrj(trj)
     resnames = np.unique([x.name for x in
                com_trj.topology.residues])
     rho_list = list()
-    #bin_width = (box_range[1] - box_range[0]) / n_bins
+    res_list = list()
     
     for resname in resnames:
         sliced = com_trj.topology.select('resname {}'.format(resname))
         trj_slice = com_trj.atom_slice(sliced)
         if frame_range:
             trj_slice = trj_slice[frame_range]
-        for frame in trj_slice:
+        for i,frame in enumerate(trj_slice):
             if maxs is None:
                 indices = [[atom.index for atom in compound.atoms]
                           for compound in
@@ -62,7 +68,7 @@ def calc_number_density(gro_file, trj_file, top_file, area,
                           np.where(frame.xyz[-1, :, 1] < box_range[1])))
 
             if frame_range:
-                if frame.time == frame_range[0]:
+                if i == 0:
                     x = np.histogram(frame.xyz[0,indices,dim].flatten(), 
                         bins=n_bins, range=(box_range[0], box_range[1]))
                     rho = x[0]
@@ -72,7 +78,7 @@ def calc_number_density(gro_file, trj_file, top_file, area,
                             flatten(),bins=n_bins, range=(box_range[0],
                                 box_range[1]))[0]
             else:
-                if frame.time == 0:
+                if i == 0:
                     x = np.histogram(frame.xyz[0,indices,dim].flatten(), 
                         bins=n_bins, range=(box_range[0], box_range[1]))
                     rho = x[0]
@@ -81,22 +87,27 @@ def calc_number_density(gro_file, trj_file, top_file, area,
                     rho += np.histogram(frame.xyz[0, indices, dim].
                             flatten(),bins=n_bins, range=(box_range[0],
                                 box_range[1]))[0]
-            """else:
-                rho += np.histogram(frame.xyz[0, indices, dim].flatten(), 
-                          bins=n_bins, range=(box_range[0],
-                          box_range[1]))[0]"""
-        rho = np.divide(rho, trj_slice.n_frames * area *
-                2 / n_bins)
-        """print('With specified bins, rho = {}'.format(rho))
-        test = np.divide(rho, trj_slice.n_frames * len(indices) 
-                * area * 8  / 1000)
-        print('With 1000 bins, rho = {}'.format(test))"""
+
+        rho = np.divide(rho, trj_slice.n_frames*area*(bins[1]-bins[0]))
         rho_list.append(rho)
+        res_list.append(resname)
 
-    bin_list = bins[:-1]
+    new_bins = list()
+    for idx, bi in enumerate(bins):
+        if (idx+1) >= len(bins):
+            continue
+        mid = (bins[idx] + bins[idx+1])/2
+        new_bins.append(mid)
+
+    if shift:
+        middle = float(n_bins / 2)
+        if middle % 2 != 0:
+            shift_value = new_bins[int(middle - 0.5)]
+        else:
+            shift_value = new_bins[int(middle)]
+        new_bins = [(bi-shift_value) for bi in new_bins]
     
-    return(rho_list, bin_list)
-
+    return (rho_list, new_bins, res_list)
 
 def calc_number_lammps(lammpstrj, top_file, area,
         dim, box_range, n_bins, frame_range=None,maxs=None, mins=None):
@@ -105,21 +116,21 @@ def calc_number_lammps(lammpstrj, top_file, area,
 
     Parameters
     ----------
-    lammpstrj: str
+    lammpstrj : str
         LAMMPS 'lammpstrj' dump file to load
-    top_file: str
+    top_file : str
         LAMMPS-compatible top file to load
-    bin_width: int
-        Width (nm) of numpy histogram bins
+    area : int or float
+        Area of box in dimensions where number density isn't calculated
     dim: int
         Dimension to calculate number density profile (0,1 or 2)
-    box_range: array
+    box_range : array
         Range of coordinates in 'dim' to evaluate
-    frame_range: Python range() (optional)
+    frame_range : Python range() (optional)
         Range of frames to calculate number density function over
-    maxs: array (optional)
+    maxs : array (optional)
         Maximum coordinate to evaluate 
-    mins: array (optional)
+    mins : array (optional)
         Minimum coordinate to evalute
     
     Attributes
