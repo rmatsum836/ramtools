@@ -109,6 +109,95 @@ def calc_number_density(trj, area,
     
     return (rho_list, new_bins, res_list)
 
+def calc_molecules_per_area(trj, area,
+        dim, box_range, n_bins, shift=True, frame_range=None):
+    """
+    Calculate molecules per area
+
+    Parameters
+    ----------
+    trj : MDTraj.trajectory
+        Trajectory
+    area : int or float
+        Area of box in dimensions where number density isn't calculated
+    dim : int
+        Dimension to calculate number density profile (0,1 or 2)
+    box_range : array
+        Range of coordinates in 'dim' to evaluate
+    n_bins : int
+        Number of bins in histogram
+    shift : boolean, default=True
+        Shift center to zero if True
+    frame_range : Python range() (optional)
+        Range of frames to calculate number density function over
+    
+    Returns
+    -------
+    area_list : list
+        A list of lists containing number density for each bin
+    bin_list : list
+        A list of bins
+    res_list : list
+        A list containing residue names
+    """
+    com_trj = make_comtrj(trj)
+    resnames = np.unique([x.name for x in
+               com_trj.topology.residues])
+    area_list = list()
+    res_list = list()
+    
+    for resname in resnames:
+        sliced = com_trj.topology.select('resname {}'.format(resname))
+        trj_slice = com_trj.atom_slice(sliced)
+        if frame_range:
+            trj_slice = trj_slice[frame_range]
+        for i,frame in enumerate(trj_slice):
+            indices = [[atom.index for atom in compound.atoms]
+                      for compound in
+                      list(frame.topology.residues)]
+
+            if frame_range:
+                if i == 0:
+                    x = np.histogram(frame.xyz[0,indices,dim].flatten(), 
+                        bins=n_bins, range=(box_range[0], box_range[1]))
+                    areas = x[0]
+                    bins = x[1]
+                else:
+                    areas += np.histogram(frame.xyz[0, indices, dim].
+                            flatten(),bins=n_bins, range=(box_range[0],
+                                box_range[1]))[0]
+            else:
+                if i == 0:
+                    x = np.histogram(frame.xyz[0,indices,dim].flatten(), 
+                        bins=n_bins, range=(box_range[0], box_range[1]))
+                    areas = x[0]
+                    bins = x[1]
+                else:
+                    areas += np.histogram(frame.xyz[0, indices, dim].
+                            flatten(),bins=n_bins, range=(box_range[0],
+                                box_range[1]))[0]
+
+        areas = np.divide(areas, trj_slice.n_frames)
+        area_list.append(areas)
+        res_list.append(resname)
+
+    new_bins = list()
+    for idx, bi in enumerate(bins):
+        if (idx+1) >= len(bins):
+            continue
+        mid = (bins[idx] + bins[idx+1])/2
+        new_bins.append(mid)
+
+    if shift:
+        middle = float(n_bins / 2)
+        if middle % 2 != 0:
+            shift_value = new_bins[int(middle - 0.5)]
+        else:
+            shift_value = new_bins[int(middle)]
+        new_bins = [(bi-shift_value) for bi in new_bins]
+    
+    return (area_list, new_bins, res_list)
+
 def calc_number_lammps(lammpstrj, top_file, area,
         dim, box_range, n_bins, frame_range=None,maxs=None, mins=None):
     """

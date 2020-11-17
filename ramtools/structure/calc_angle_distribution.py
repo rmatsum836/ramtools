@@ -97,7 +97,8 @@ def calc_water_angle(trj_file, gro_file, cutoff, dim=2, filepath='', box_dims=No
     for idx in range(180):
         mid = idx + 0.5
         new_x.append(mid)
-    new_x_hist = y / np.sin((np.array(new_x) * np.pi / 180))
+    # Normalized data by sin(theta)
+    normalized_y = y / np.sin((np.array(new_x) * np.pi / 180))
     fig, ax = plt.subplots()
     plt.plot(new_x, y)
     plt.xlim((0, 181))
@@ -111,4 +112,4 @@ def calc_water_angle(trj_file, gro_file, cutoff, dim=2, filepath='', box_dims=No
     plt.xlabel('Angle (Deg)')
     plt.savefig(f'{filepath}/water_angles.pdf')
 
-    return new_x, y
+    return new_x, normalized_y, y
