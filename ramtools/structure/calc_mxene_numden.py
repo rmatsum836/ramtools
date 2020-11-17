@@ -52,9 +52,15 @@ def calc_number_density(coord_file, trj_file, bin_width, area, dim, box_range, d
                 if atom.element in [Element.virtual, Element.virtual_site]:
                     atom.element = Element.hydrogen
 
+        n_bins = 1 + round((box_range[1]-box_range[0]) / bin_width)
         x = np.histogram(traj.xyz[:, 1:, dim].reshape((-1, 1)),
             bins=np.linspace(box_range[0], box_range[1],
-            num=1+round((box_range[1]-box_range[0])/bin_width)))
+            num=n_bins))
+
+        rho = x[0]
+        bins = x[1]
+
+        new_bins = (bins[:-1] + bins[1:]) / 2
 
         np.savetxt('{0}/{1}-number-density.txt'.format(data_path, resname),
             np.vstack([x[1][:-1]+np.mean(x[1][:2])-box_range[0],
