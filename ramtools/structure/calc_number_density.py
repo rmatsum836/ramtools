@@ -189,7 +189,7 @@ def calc_atom_number_density(trj, area,
                               np.where(frame.xyz[-1, :, dim1] < maxs[dim1])),
                           np.intersect1d(np.where(frame.xyz[-1, :, dim2]
                               > mins[dim2]),
-                              np.where(frame.xyz[-1, :, 0] < maxs[dim2])),
+                              np.where(frame.xyz[-1, :, dim2] < maxs[dim2])),
                           np.intersect1d(np.where(frame.xyz[-1, :, dim] 
                               > box_range[0]),
                           np.where(frame.xyz[-1, :, dim] < box_range[1])))
