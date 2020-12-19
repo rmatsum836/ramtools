@@ -39,17 +39,10 @@ def calc_water_angle(trj_file, gro_file, cutoff, dim=2, filepath='', box_dims=No
     ----------
     trj_file : trajectory file
         MD trajectory to load
-<<<<<<< HEAD
-    gro_file : GROMACS gro file
-        MD coordinates to load
-    cutoff : float
-        Cutoff to analyze molecules in z-direction
-=======
     gro_file : Coordinate file
         MD coordinates to load.  MOL2 file is preferred as it contains bond information.
     cutoff : float
         Cutoff to analyze molecules in z-direction (angstroms)
->>>>>>> 10cbc8b61ee411703e4e2c7add7025fd4727c2db
     dim : int
         Dimension of surface vector
     """
@@ -60,9 +53,6 @@ def calc_water_angle(trj_file, gro_file, cutoff, dim=2, filepath='', box_dims=No
     else:
         normal_vector = [0, 0, 1]
 
-<<<<<<< HEAD
-    universe = mda.Universe(gro_file, trj_file)
-=======
     trj_str = f'{filepath}/{trj_file}'
     gro_str = f'{filepath}/{gro_file}'
 
@@ -70,21 +60,15 @@ def calc_water_angle(trj_file, gro_file, cutoff, dim=2, filepath='', box_dims=No
     if isinstance(box_dims, (tuple, list, np.ndarray)):
         universe.dimensions = np.array([box_dims[0], box_dims[1], box_dims[2], 90, 90, 90])
 
->>>>>>> 10cbc8b61ee411703e4e2c7add7025fd4727c2db
-
     water_groups = universe.select_atoms('resname SOL')
     print("Unwrapping water molecules")
     transform = transformations.unwrap(water_groups)
     universe.trajectory.add_transformations(transform)
     print("Finished unwrapping water molecules")
-<<<<<<< HEAD
-    coordinates = [water_groups.positions for ts in universe.trajectory[5000:]]
-=======
     if chunk:
         coordinates = [water_groups.positions for ts in universe.trajectory[chunk:]]
     else:
         coordinates = [water_groups.positions for ts in universe.trajectory]
->>>>>>> 10cbc8b61ee411703e4e2c7add7025fd4727c2db
     angles = list()
     radians = list()
     print("Starting to analyze vectors ... ")
@@ -100,11 +84,7 @@ def calc_water_angle(trj_file, gro_file, cutoff, dim=2, filepath='', box_dims=No
             vector = [xyz[0][i] - fit[i] for i in range(3)]
 
             angle = angle_between(np.array([vector[0], vector[1], vector[2]]),
-<<<<<<< HEAD
-                    np.array(normal_vector))
-=======
                     np.array(normal_vector)) * (180 / np.pi)
->>>>>>> 10cbc8b61ee411703e4e2c7add7025fd4727c2db
 
             angle_in_radians = angle * np.pi / 180
             radians.append(angle_in_radians)
