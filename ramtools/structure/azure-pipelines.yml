@@ -64,7 +64,7 @@ stages:
           - bash: |
               source activate test-environment
               pip install pytest-azurepipelines
-              python -m pytest -v --pyargs ramtools --cov=mbuild --no-coverage-upload
+              python -m pytest -v --pyargs ramtools
             displayName: Run Tests
           - bash: |
               source activate test-environment
