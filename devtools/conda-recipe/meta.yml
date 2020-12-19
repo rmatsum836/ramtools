@@ -1,0 +1,32 @@
+package:
+  name: ramtools
+  version: "0.0.0"
+
+source:
+  path: ../../
+
+build:
+  number: {{ environ.get('GIT_DESCRIBE_NUMBER', 0)}}
+  script: python setup.py install --record record.txt
+
+requirements:
+  build:
+    - python
+    - setuptools
+
+  run:
+    - python
+    - numpy
+    - mdtraj
+    - mdanalysis
+
+test:
+  requires:
+    - pytest
+  imports:
+    - ramtools
+
+about:
+  home: https://github.com/rmatsum836/ramtools
+  license: MIT License
+  summary: Analysis tools for molecular simulations
