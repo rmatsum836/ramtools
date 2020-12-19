@@ -1,4 +1,6 @@
 numpy
 mdtraj
+mdanalysis
+matplotlib
 parmed
 unyt

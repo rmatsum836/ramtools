@@ -60,7 +60,6 @@ def calc_water_angle(trj_file, gro_file, cutoff, dim=2, filepath='', box_dims=No
     if isinstance(box_dims, (tuple, list, np.ndarray)):
         universe.dimensions = np.array([box_dims[0], box_dims[1], box_dims[2], 90, 90, 90])
 
-
     water_groups = universe.select_atoms('resname SOL')
     print("Unwrapping water molecules")
     transform = transformations.unwrap(water_groups)
