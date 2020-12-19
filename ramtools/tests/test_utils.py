@@ -14,4 +14,4 @@ class TestUtils(BaseTest):
         gromacs_tools.create_itp('init.itp', n_atoms=100, fx_const=100)
 
     def test_make_ndx(self):
-        gromacs_tools.make_ndx(get_fn('tip3p.gro'), 'resname SOL', 'resname SOL', 'index.ndx')
+        gromacs_tools.make_ndx(get_fn('water_spce.gro'), 'resname SOL', 'resname SOL', 'index.ndx')
