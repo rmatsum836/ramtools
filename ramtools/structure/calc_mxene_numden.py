@@ -146,7 +146,7 @@ def plot_mxene_numden(resnames, ylim, path, filename='number_density.pdf', shift
     plt.legend()
     plt.savefig(filename)
 
-def calc_gmx_number_density(coord_file, trj_file, bin_width, area, dim, box_range, data_path, resnames, shift=None, chunk=None):
+def calc_gmx_number_density(coord_file, trj_file, bin_width, area, dim, box_range, data_path, resnames, shift=None, chunk=None, unitcell_lengths=None, bond_array=None):
     """
     Calculate a 1-dimensional number density profile for each residue specifically for mxene water adsorption study
 
@@ -172,6 +172,10 @@ def calc_gmx_number_density(coord_file, trj_file, bin_width, area, dim, box_rang
         shift coordinates by this value
     chunk: int, default=None
         Chunk of trajectory to consider
+    unitcell_lengths: iterable, default=None
+        Unitcell lengths of trajectory
+    bond_array: iterable, default=None
+        Array of bond indices
 
     
     Returns
@@ -190,25 +194,37 @@ def calc_gmx_number_density(coord_file, trj_file, bin_width, area, dim, box_rang
     open('{0}/resnames.txt'.format(data_path), 'w').close()
     
     histogram_dict = dict()
+    traj = md.load(trj_file, top=coord_file)
+    if unitcell_lengths:
+        traj.unitcell_lengths = np.tile(unitcell_lengths, (traj.n_frames, 1))
+        unitcell_vectors = np.array([[[unitcell_lengths[0], 0, 0],
+                                     [0, unitcell_lengths[1], 0],
+                                     [0, 0, unitcell_lengths[2]]]],
+                                     dtype=np.float32,
+        )
+        traj.unitcell_vectors = np.tile(unitcell_vectors, (traj.n_frames, 1, 1))
+
+    # Make molecules whole
+    traj.make_molecules_whole(inplace=True, sorted_bonds=bond_array)
+
     for resname, restype in resnames.items():
-        traj = md.load(trj_file, top=coord_file,
-            atom_indices=first_frame.topology.select('{}'
-                .format(restype)))
+        sub_traj = traj.atom_slice(traj.topology.select(
+                   restype))
   
         if chunk:
-            traj = traj[chunk:]
+            sub_traj = sub_traj[chunk:]
 
         indices = [[at.index for at in compound.atoms]
-            for compound in list(traj.topology.residues)]
+            for compound in list(sub_traj.topology.residues)]
 
         if 0 in [x.mass for x in
-            [atom.element for atom in traj.topology.atoms]]:
+            [atom.element for atom in sub_traj.topology.atoms]]:
             warnings.warn("mdtraj found zero mass, setting element to hydrogen", UserWarning)
-            for atom in traj.topology.atoms:
+            for atom in sub_traj.topology.atoms:
                 if atom.element in [Element.virtual, Element.virtual_site]:
                     atom.element = Element.hydrogen
 
-        hist, bins = np.histogram(traj.xyz[:, 1:, dim].reshape((-1, 1)),
+        hist, bins = np.histogram(sub_traj.xyz[:, 1:, dim].reshape((-1, 1)),
             bins=np.linspace(box_range[0], box_range[1],
             num=1+round((box_range[1]-box_range[0])/bin_width)))
         bins_center = (bins[:-1] + bins[1:]) / 2
@@ -216,15 +232,15 @@ def calc_gmx_number_density(coord_file, trj_file, bin_width, area, dim, box_rang
         if shift:
             np.savetxt('{0}/{1}-number-density.txt'.format(data_path, resname),
                 np.vstack([bins_center - shift,
-                hist/(area*bin_width*(len(traj)-1))]).transpose())
+                hist/(area*bin_width*(len(sub_traj)-1))]).transpose())
         else:
             np.savetxt('{0}/{1}-number-density.txt'.format(data_path, resname),
                 np.vstack([bins_center,
-                hist/(area*bin_width*(len(traj)-1))]).transpose())
+                hist/(area*bin_width*(len(sub_traj)-1))]).transpose())
 
         with open('{0}/resnames.txt'.format(data_path), "a") as myfile:
             myfile.write(resname + '\n')
 
-        histogram_dict[resname] = hist / (area*bin_width*(len(traj)-1))
+        histogram_dict[resname] = hist / (area*bin_width*(len(sub_traj)-1))
 
     return bins_center, histogram_dict
