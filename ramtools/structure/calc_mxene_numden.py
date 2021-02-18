@@ -1,5 +1,6 @@
 import numpy as np
 import mdtraj as md
+import itertools
 import warnings
 import mdtraj.core.element as Element
 import matplotlib.pyplot as plt
@@ -206,6 +207,20 @@ def calc_gmx_number_density(coord_file, trj_file, bin_width, area, dim, box_rang
 
     # Make molecules whole
     traj.make_molecules_whole(inplace=True, sorted_bonds=bond_array)
+    water = traj.atom_slice(traj.topology.select('water'))
+    # Verify that molecules are made whole
+    combos = itertools.combinations([0,1,2], 2)
+    for idx in range(1, len([i for i in water.topology.residues])): 
+        water_res = water.atom_slice(water.topology.select(f"resid {idx}"))[100:200]
+        for frame_num, frame in enumerate(water_res):
+            res_xyz = frame.xyz
+            # TODO: Figure out why this isn't looping properly
+            for combo in combos:
+                distance = np.linalg.norm(res_xyz[0][combo[1]] - res_xyz[0][combo[0]])
+                print(distance)
+                #if distance > 0.2:
+                #    raise ValueError("Distance between two water atoms is greater than 0.2.  Please check to make sure that you molecules have been correctly wrapped.")
+    
 
     for resname, restype in resnames.items():
         sub_traj = traj.atom_slice(traj.topology.select(
@@ -230,13 +245,11 @@ def calc_gmx_number_density(coord_file, trj_file, bin_width, area, dim, box_rang
         bins_center = (bins[:-1] + bins[1:]) / 2
 
         if shift:
-            np.savetxt('{0}/{1}-number-density.txt'.format(data_path, resname),
-                np.vstack([bins_center - shift,
-                hist/(area*bin_width*(len(sub_traj)-1))]).transpose())
-        else:
-            np.savetxt('{0}/{1}-number-density.txt'.format(data_path, resname),
-                np.vstack([bins_center,
-                hist/(area*bin_width*(len(sub_traj)-1))]).transpose())
+            bins_center -= shift
+
+        np.savetxt('{0}/{1}-number-density.txt'.format(data_path, resname),
+            np.vstack([bins_center,
+            hist/(area*bin_width*(len(sub_traj)-1))]).transpose())
 
         with open('{0}/resnames.txt'.format(data_path), "a") as myfile:
             myfile.write(resname + '\n')
